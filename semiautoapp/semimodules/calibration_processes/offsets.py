@@ -112,6 +112,7 @@ class OffsetsThread(threading.Thread):
     def __init__(self, root, parent, child, status, progressbar, progress_var, directory):
         threading.Thread.__init__(self)
 
+        self.samplingFreq = None
         self.root = root
         self.parent = parent
         self.child = child
@@ -167,7 +168,8 @@ class OffsetsThread(threading.Thread):
 
         # block writing to flush memory, close shutter, set maximum update rate
         self.dev.rxtx('ns2300=1|1103=1|301=1|')
-
+        self.samplingFreq = round(1 / ((10 ** -6) * int(1)
+                                       * int(self.dev.dev_data['cycle_time'])), 2)
         # turn-off LED
         self.dev.rxtx('ns2030=' + str(self.lph_min) + '|' +
                       '2031=' + str(self.lph_min_scale) + '|' +
@@ -175,9 +177,7 @@ class OffsetsThread(threading.Thread):
                       '2131=' + str(self.lph_min_scale) + '|')
 
         self.tv_offsets.item(self.child, values=(self.dev.sn, self.ch, '', '', '',
-                                                 '', '', '',
-                                                 round(1 / ((10 ** -6) * int(1)
-                                                            * int(self.dev.dev_data['cycle_time'])), 2),
+                                                 '', '', '', self.samplingFreq,
                                                  'Calibrating...'))
 
         time.sleep(1)
@@ -187,28 +187,26 @@ class OffsetsThread(threading.Thread):
         self.status.insert(END, 'Starting offsets process of unit: ' + self.unit)
         self.parent.update_idletasks()
 
-        samples = 100
+        samples = int(self.samplingFreq * 5)
         signal_set_point = 0
-        gain_index = self.dev.gain_table.index(str(self.dev.dev_gains_conf['max_gain']))
+        max_gain = self.dev.gain_table.index(str(self.dev.dev_gains_conf['max_gain']))
 
-        if self.dev.dev_data['hw'] == 'Standard':
-            self.dev.set_signal_value('agc_emission_', self.ch, self.min_limit,
-                                      self.max_limit, gain_index, 0, samples, signal_set_point)
+        if self.dev.dev_data['hw'] == 'Integrator':
+            signal_workflow = ['agc_emission_', 'emission_', 'emission_', 'reflection_',
+                               'agc_emission_', 'emission_', 'emission_',
+                               'agc_emission_', 'emission_', 'emission_', 'reflection_']
+            gain_index_workflow = [10, 10, 1, 10, 6, 6, 1, 11, 11, 1, 11]
+            gain_mode_workflow = [1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3]
 
-            self.dev.set_signal_value('agc_emission_', self.ch, self.min_limit,
-                                      self.max_limit, gain_index, 1, samples, signal_set_point)
+        else:
+            signal_workflow = ['agc_emission_', 'agc_emission_', 'emission_', 'emission_', 'reflection_']
+            gain_index_workflow = [max_gain, max_gain, 1, max_gain, max_gain]
+            gain_mode_workflow = [0, 1, 0, 0, 0]
 
-            self.dev.set_signal_value('emission_', self.ch, self.min_limit,
-                                      self.max_limit, 1, 0, samples, signal_set_point)
-
-            self.dev.set_signal_value('emission_', self.ch, self.min_limit,
-                                      self.max_limit, gain_index, 0, samples, signal_set_point)
-
-            self.dev.set_signal_value('reflection_', self.ch, self.min_limit,
-                                      self.max_limit, gain_index, 0, samples, signal_set_point)
-
-        elif self.dev.dev_data['hw'] == 'Integrator':
-            pass
+        for i in range(0, len(signal_workflow)):
+            self.dev.set_signal_value(signal_workflow[i], self.ch, self.min_limit,
+                                      self.max_limit, gain_index_workflow[i],
+                                      gain_mode_workflow[i], samples, signal_set_point)
 
         self.parent.update_idletasks()
 

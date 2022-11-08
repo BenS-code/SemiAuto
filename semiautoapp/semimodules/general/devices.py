@@ -2,6 +2,7 @@ from socket import *
 import struct
 import numpy as np
 import time
+from ..general import algo
 
 
 class NTM:
@@ -323,6 +324,8 @@ class NTM:
 
     def signals_statistics(self, samples):
 
+        self.initiate_signals()
+
         self.send_full_packet(0)
 
         for i in range(samples):
@@ -381,51 +384,40 @@ class NTM:
                     'agc_emission_ch1': [np.mean(self.dev_signals['agc_emission_ch1']),
                                          np.std(self.dev_signals['agc_emission_ch1'])]}
 
-    def binary_search(self, signal, ch, low, high, set_point, knob_parameter, samples):
-        signal_arr = []
-
-        self.initiate_signals()
-
-        statistics_data = self.signals_statistics(samples)
-
-        signal_average = float(statistics_data[signal + ch][0])
-
-        # if set_point< signal_average
-
     def set_signal_value(self, signal, ch, min_limit, max_limit, gain, gain_mode, samples, set_point):
 
         # define parameter to modify
-        if self.dev_data['hw'] == 'Standard':
+        if self.dev_data['hw'] == 'Integrator':
             knob_params_dict = {'agc_emission_ch1_0_16': '2035', 'agc_emission_ch2_0_16': '2036',
                                 'agc_emission_ch1_1_16': '2041', 'agc_emission_ch2_1_16': '2047',
                                 'emission_ch1_0_1': '', 'emission_ch2_0_1': '',
                                 'emission_ch1_0_16': '', 'emission_ch2_0_16': ''}
 
-        elif self.dev_data['hw'] == 'Integrator':
-            pass
+        else:
+            knob_params_dict = {'agc_emission_ch1_0_16': '2035', 'agc_emission_ch2_0_16': '2036',
+                                'agc_emission_ch1_1_16': '2041', 'agc_emission_ch2_1_16': '2047',
+                                'emission_ch1_0_1': '', 'emission_ch2_0_1': '',
+                                'emission_ch1_0_16': '', 'emission_ch2_0_16': ''}
 
         self.set_gain_settings(gain_mode, gain)
 
         time.sleep(1)
 
-        self.initiate_signals()
+        stat_data = self.signals_statistics(samples)
 
-        statistics_data = self.signals_statistics(samples)
+        signal_average = float(stat_data[signal + ch][0])
+        signal_std = float(stat_data[signal + ch][1])
 
-        signal_average = float(statistics_data[signal + ch][0])
-        signal_std = float(statistics_data[signal + ch][1])
+        min_ref = set_point - 2*(signal_std / 2)
+        max_ref = set_point + 2*(signal_std / 2)
 
-        min_ref = set_point - (signal_std / 2)
-        max_ref = set_point + (signal_std / 2)
-
-        print('\nSignal: ', signal + ch)
-        print('--------------------------')
+        print('\n' + signal + ch + ' (' + str(samples) + ' samples)')
+        print('-----------------------------------------------')
         print('Average: ', signal_average)
         print('STD: ', signal_std)
-        print('min ref: ', min_ref)
-        print('max ref: ', max_ref)
+        print('Set-point: ', set_point)
+        print('Set-point low limit: ', min_ref)
+        print('Set-point high limit: ', max_ref)
+        print('-----------------------------------------------\n')
 
-        # self.binary_search(signal, ch, min_limit, max_limit, set_point, knob_parameter, samples)
-
-        # while (signal_average < min_ref) or (signal_average > max_ref):
-        #     pass
+        algo.binary_search(signal, ch, min_limit, max_limit, set_point, knob_parameter, samples)
