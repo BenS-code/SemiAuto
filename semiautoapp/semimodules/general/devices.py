@@ -1,8 +1,6 @@
 from socket import *
 import struct
 import numpy as np
-import time
-from ..general import algo
 
 
 class NTM:
@@ -177,7 +175,7 @@ class NTM:
     def get_offsets_settings(self):
         data = self.rxtx('nr2035|2036|2041|2040|2047|2046|2037|2038|2039|2138|1211|1221|1222|')
 
-        if self.dev_gains_conf['is_integrator_mode'] == 1:
+        if self.dev_gains_conf['is_integrator_mode'] == '1':
             self.dev_offsets['offset_in_IL'] = float(data[0])
             self.dev_offsets['offset_in_IS'] = float(data[1])
             self.dev_offsets['offset_in_RC'] = float(data[2])
@@ -384,32 +382,18 @@ class NTM:
                     'agc_emission_ch1': [np.mean(self.dev_signals['agc_emission_ch1']),
                                          np.std(self.dev_signals['agc_emission_ch1'])]}
 
-    def set_signal_value(self, signal, ch, min_limit, max_limit, gain, gain_mode, samples, set_point):
-
-        # define parameter to modify
-        if self.dev_data['hw'] == 'Integrator':
-            knob_params_dict = {'agc_emission_ch1_0_16': '2035', 'agc_emission_ch2_0_16': '2036',
-                                'agc_emission_ch1_1_16': '2041', 'agc_emission_ch2_1_16': '2047',
-                                'emission_ch1_0_1': '', 'emission_ch2_0_1': '',
-                                'emission_ch1_0_16': '', 'emission_ch2_0_16': ''}
-
-        else:
-            knob_params_dict = {'agc_emission_ch1_0_16': '2035', 'agc_emission_ch2_0_16': '2036',
-                                'agc_emission_ch1_1_16': '2041', 'agc_emission_ch2_1_16': '2047',
-                                'emission_ch1_0_1': '', 'emission_ch2_0_1': '',
-                                'emission_ch1_0_16': '', 'emission_ch2_0_16': ''}
+    def set_signal_value(self, signal, ch, min_limit, max_limit, gain, gain_mode, samples,
+                         set_point, param_code, param_str):
 
         self.set_gain_settings(gain_mode, gain)
-
-        time.sleep(1)
 
         stat_data = self.signals_statistics(samples)
 
         signal_average = float(stat_data[signal + ch][0])
         signal_std = float(stat_data[signal + ch][1])
 
-        min_ref = set_point - 2*(signal_std / 2)
-        max_ref = set_point + 2*(signal_std / 2)
+        min_ref = set_point - 0.1 * (signal_std / 2)
+        max_ref = set_point + 0.1 * (signal_std / 2)
 
         print('\n' + signal + ch + ' (' + str(samples) + ' samples)')
         print('-----------------------------------------------')
@@ -420,4 +404,90 @@ class NTM:
         print('Set-point high limit: ', max_ref)
         print('-----------------------------------------------\n')
 
-        algo.binary_search(signal, ch, min_limit, max_limit, set_point, knob_parameter, samples)
+        self.binary_search(signal, ch, min_limit, max_limit, min_ref, max_ref,
+                           param_code, param_str, samples, set_point)
+
+    def binary_search(self, signal, ch, min_limit, max_limit, min_ref, max_ref,
+                      param_code, param_str, samples, set_point):
+
+        self.get_offsets_settings()
+        param_value = self.dev_offsets[param_str]
+        print('Initial value of parameter =', param_value)
+
+        self.initiate_signals()
+
+        # check if changing parameter value increase or decrease signal
+
+        statistics_data = self.signals_statistics(samples)
+
+        avg1 = float(statistics_data[signal + ch][0])
+
+        self.rxtx('ns' + param_code + '=' + str(param_value + 500) + '|')
+
+        statistics_data = self.signals_statistics(samples)
+
+        avg2 = float(statistics_data[signal + ch][0])
+
+        self.rxtx('ns' + param_code + '=' + str(param_value) + '|')
+
+        if avg1 > avg2:
+            flag = 1
+            print('Signal value decreases with parameter')
+        else:
+            flag = 0
+            print('Signal value increases with parameter')
+
+        # end of check
+
+        statistics_data = self.signals_statistics(samples)
+
+        signal_average = float(statistics_data[signal + ch][0])
+        counter = 0
+
+        while ((signal_average < min_ref) or (signal_average > max_ref)) & (counter < 15):
+
+            counter += 1
+            print('\nRun # = ', counter)
+            print('Signal value = ', signal_average)
+
+            if signal_average < min_ref:
+                if flag == 1:
+                    max_limit = param_value
+                    param_value = (min_limit + param_value) / 2
+                else:
+                    min_limit = param_value
+                    param_value = (max_limit + param_value) / 2
+                self.rxtx('ns' + param_code + '=' + str(param_value) + '|')
+
+            elif signal_average > max_ref:
+                if flag == 1:
+                    min_limit = param_value
+                    param_value = (max_limit + param_value) / 2
+                else:
+                    max_limit = param_value
+                    param_value = (min_limit + param_value) / 2
+                self.rxtx('ns' + param_code + '=' + str(param_value) + '|')
+
+            statistics_data = self.signals_statistics(samples)
+
+            signal_average = float(statistics_data[signal + ch][0])
+            print('\nparam_value = ', param_value)
+            print('min lim = ', min_limit)
+            print('max lim = ', max_limit)
+
+        # optimize parameter value by searching around SP
+        diffs = []
+        averages = []
+        param_values = [param_value, param_value + 1, param_value - 1]
+
+        for i in param_values:
+            self.rxtx('ns' + param_code + '=' + str(i) + '|')
+            statistics_data = self.signals_statistics(samples)
+            averages.append(float(statistics_data[signal + ch][0]))
+            diffs.append(np.abs(float(statistics_data[signal + ch][0]) - set_point))
+
+        print(diffs)
+        signal_average = averages[diffs.index(np.min(diffs))]
+        self.rxtx('ns' + param_code + '=' + str(param_values[diffs.index(np.min(diffs))]) + '|')
+
+        print('\nFinal - ' + signal + ch + ' = ' + str(signal_average) + '\n')
