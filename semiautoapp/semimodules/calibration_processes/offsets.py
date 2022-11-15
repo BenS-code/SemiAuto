@@ -91,6 +91,7 @@ class Offsets(Frame):
         self.parent.focus_force()
 
         for child in self.tv.get_children():
+
             cal_thread = OffsetsThread(self.parent, self, child,
                                        self.status_entry,
                                        self.progressbar,
@@ -180,8 +181,6 @@ class OffsetsThread(threading.Thread):
                                                  '', '', '', self.samplingFreq,
                                                  'Calibrating...'))
 
-        time.sleep(1)
-
     def run_process(self):
         self.status.delete(0, END)
         self.status.insert(END, 'Starting offsets process of unit: ' + self.unit)
@@ -218,13 +217,31 @@ class OffsetsThread(threading.Thread):
             else:
                 cmd_workflow = ['2036', '2047', '2039', '2046', '2138']
 
+        self.progressbar.config(maximum=len(signal_workflow))
         for i in range(0, len(signal_workflow)):
+            # set_signal_thread = threading.Thread(target=self.dev.set_signal_value,
+            #                                      args=(signal_workflow[i],
+            #                                            self.ch, min_limit,
+            #                                            max_limit,
+            #                                            gain_index_workflow[i],
+            #                                            gain_mode_workflow[i],
+            #                                            samples,
+            #                                            signal_set_point,
+            #                                            cmd_workflow[i],
+            #                                            param_workflow[i])
+            #                                      )
+            # set_signal_thread.daemon = True
+            # set_signal_thread.start()
+            # set_signal_thread.join()
+
             self.dev.set_signal_value(signal_workflow[i], self.ch, min_limit,
                                       max_limit, gain_index_workflow[i],
                                       gain_mode_workflow[i], samples, signal_set_point,
                                       cmd_workflow[i], param_workflow[i])
 
+            self.progress_var.set(i + 1)
             self.parent.update_idletasks()
+            time.sleep(2)
 
     def end_process(self):
         self.status.delete(0, END)
@@ -241,8 +258,6 @@ class OffsetsThread(threading.Thread):
                       '2130=' + str(self.dev.dev_lph_conf['lph_ch2']) + '|' +
                       '2131=' + str(self.dev.dev_lph_conf['lph_ch2_scale']) + '|')
 
-        time.sleep(1)
-
         # restore automatic gains
         self.dev.rxtx('ns501=0|' +
                       '508=0|' +
@@ -250,14 +265,9 @@ class OffsetsThread(threading.Thread):
                       '516=0|' +
                       '1201=0|')
 
-        time.sleep(1)
-
         # allow writing to flush memory, open shutter, restore update rate
         self.dev.rxtx('ns2300=0|1103=0|301=' + str(self.dev.dev_data['update_rate_code']) + '|')
 
-        time.sleep(1)
-
         self.tv_offsets.item(self.child, values=(self.dev.sn, self.ch, '', '', '',
                                                  '', '', '', self.dev.dev_data['update_rate'], 'Done'))
-
-        time.sleep(1)
+        self.parent.update_idletasks()

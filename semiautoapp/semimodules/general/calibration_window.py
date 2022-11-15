@@ -1,5 +1,6 @@
 from semiautoapp.semimodules.calibration_processes import *
 from tkinter import messagebox
+import threading
 
 
 class CalibrationWin(Toplevel):
@@ -31,6 +32,7 @@ class CalibrationWin(Toplevel):
             if combo_string != "Select a calibration procedure":
                 cal_class = combo_string.replace(" ", '')
                 eval(cal_class + '(self)')
+
             else:
                 self.destroy()
                 messagebox.showwarning(title='Information', message="Please select a calibration procedure from the "
