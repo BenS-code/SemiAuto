@@ -187,7 +187,7 @@ class OffsetsThread(threading.Thread):
         self.status.insert(END, 'Starting offsets process of unit: ' + self.unit)
         self.parent.update_idletasks()
 
-        samples = np.max([int(self.samplingFreq * 5), 100])
+        samples = np.max([int(self.samplingFreq), 10])
         signal_set_point = 0
         max_gain = self.dev.gain_table.index(str(self.dev.dev_gains_conf['max_gain']))
         min_limit = self.min_limit
@@ -197,12 +197,12 @@ class OffsetsThread(threading.Thread):
             signal_workflow = ['agc_emission_', 'emission_', 'emission_', 'reflection_',
                                'agc_emission_', 'emission_', 'emission_',
                                'agc_emission_', 'emission_', 'emission_', 'reflection_']
-            gain_index_workflow = [10, 10, 1, 10, 6, 6, 1, 11, 11, 1, 11]
+            gain_index_workflow = [10, 1, 10, 10, 6, 1, 6, 11, 1, 11, 11]
             gain_mode_workflow = [1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3]
-            cmd_workflow = ['2035', '2040', '2037', '2038', '2036', '2046', '2039', '2041', '1211', '1221', '1222']
-            param_workflow = ['offset_in_IL', 'offset_rf_IL', 'offset_a2d_emission_IL', 'offset_a2d_emissivity_IL',
-                              'offset_in_IS', 'offset_rf_IS', 'offset_a2d_emission_IS',
-                              'offset_in_RC', 'offset_rf_RC', 'offset_a2d_emission_RC', 'offset_a2d_emissivity_RC']
+            cmd_workflow = ['2035', '2037', '2040', '2038', '2036', '2039', '2046', '2041', '1221', '1211', '1222']
+            param_workflow = ['offset_in_IL', 'offset_a2d_emission_IL', 'offset_rf_IL', 'offset_a2d_emissivity_IL',
+                              'offset_in_IS', 'offset_a2d_emission_IS', 'offset_rf_IS',
+                              'offset_in_RC', 'offset_a2d_emission_RC', 'offset_rf_RC', 'offset_a2d_emissivity_RC']
 
         else:
             signal_workflow = ['agc_emission_', 'agc_emission_', 'emission_', 'emission_', 'reflection_']
@@ -219,13 +219,12 @@ class OffsetsThread(threading.Thread):
                 cmd_workflow = ['2036', '2047', '2039', '2046', '2138']
 
         for i in range(0, len(signal_workflow)):
-
             self.dev.set_signal_value(signal_workflow[i], self.ch, min_limit,
                                       max_limit, gain_index_workflow[i],
                                       gain_mode_workflow[i], samples, signal_set_point,
                                       cmd_workflow[i], param_workflow[i])
 
-        self.parent.update_idletasks()
+            self.parent.update_idletasks()
 
     def end_process(self):
         self.status.delete(0, END)
@@ -242,6 +241,8 @@ class OffsetsThread(threading.Thread):
                       '2130=' + str(self.dev.dev_lph_conf['lph_ch2']) + '|' +
                       '2131=' + str(self.dev.dev_lph_conf['lph_ch2_scale']) + '|')
 
+        time.sleep(1)
+
         # restore automatic gains
         self.dev.rxtx('ns501=0|' +
                       '508=0|' +
@@ -249,8 +250,12 @@ class OffsetsThread(threading.Thread):
                       '516=0|' +
                       '1201=0|')
 
+        time.sleep(1)
+
         # allow writing to flush memory, open shutter, restore update rate
         self.dev.rxtx('ns2300=0|1103=0|301=' + str(self.dev.dev_data['update_rate_code']) + '|')
+
+        time.sleep(1)
 
         self.tv_offsets.item(self.child, values=(self.dev.sn, self.ch, '', '', '',
                                                  '', '', '', self.dev.dev_data['update_rate'], 'Done'))

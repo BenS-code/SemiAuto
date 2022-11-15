@@ -1,29 +1,32 @@
 from socket import *
 import struct
 import numpy as np
+import time
 
 
 class NTM:
 
     def __init__(self, communication, com_port, sn, ip, port):
 
-        self.dev_data = {'dev_type': None, 'single_dual': None, 'hw': None, 'fw': None, 'update_rate': None,
-                         'cycle_time': None, 'update_rate_code': None}
+        # set defaults
 
-        self.dev_gains_conf = {'gain_ch1': None, 'gain_ch2': None, 'is_scale_ch1': None, 'is_scale_ch2': None,
-                               'integrator_mode': None, 'is_integrator_mode': None, 'max_gain': None}
+        self.dev_data = {'dev_type': '', 'single_dual': '', 'hw': '', 'fw': '', 'update_rate': 10,
+                         'cycle_time': 100000, 'update_rate_code': 1}
 
-        self.dev_lph_conf = {'lph_ch1': None, 'lph_ch1_scale': None, 'lph_ch2': None, 'lph_ch2_scale': None,
-                             'max_lph_ch1': None, 'max_lph_ch1_scale': None, 'max_lph_ch2': None,
-                             'max_lph_ch2_scale': None, 'is_lph_sync': None}
+        self.dev_gains_conf = {'gain_ch1': 0, 'gain_ch2': 0, 'is_scale_ch1': 0, 'is_scale_ch2': 0,
+                               'integrator_mode': 0, 'is_integrator_mode': 0, 'max_gain': 8000}
 
-        self.dev_offsets = {'offset_in_IL': None, 'offset_in_IS': None, 'offset_in_RC': None, 'offset_rf_IL': None,
-                            'offset_rf_IS': None, 'offset_a2d_emission_IL': None, 'offset_a2d_emissivity_IL': None,
-                            'offset_a2d_emission_IS': None, 'offset_rf_RC': None, 'offset_a2d_emission_RC': None,
-                            'offset_a2d_emissivity_RC': None, 'offset_in_ch1': None, 'offset_in_ch2': None,
-                            'offset_in_scale_ch1': None, 'offset_rf_ch1': None, 'offset_in_scale_ch2': None,
-                            'offset_rf_ch2': None, 'offset_a2d_emission_ch1': None, 'offset_a2d_emissivity_ch1': None,
-                            'offset_a2d_emission_ch2': None, 'offset_a2d_emissivity_ch2': None}
+        self.dev_lph_conf = {'lph_ch1': 32000, 'lph_ch1_scale': 32000, 'lph_ch2': 32000, 'lph_ch2_scale': 32000,
+                             'max_lph_ch1': 65535, 'max_lph_ch1_scale': 65535, 'max_lph_ch2': 65535,
+                             'max_lph_ch2_scale': 65535, 'is_lph_sync': 0}
+
+        self.dev_offsets = {'offset_in_IL': 0, 'offset_in_IS': 0, 'offset_in_RC': 0, 'offset_rf_IL': 0.0,
+                            'offset_rf_IS': 0.0, 'offset_a2d_emission_IL': 0, 'offset_a2d_emissivity_IL': 0,
+                            'offset_a2d_emission_IS': 0, 'offset_rf_RC': 0.0, 'offset_a2d_emission_RC': 0,
+                            'offset_a2d_emissivity_RC': 0, 'offset_in_ch1': 0, 'offset_in_ch2': 0,
+                            'offset_in_scale_ch1': 0, 'offset_rf_ch1': 0.0, 'offset_in_scale_ch2': 0,
+                            'offset_rf_ch2': 0.0, 'offset_a2d_emission_ch1': 0, 'offset_a2d_emissivity_ch1': 0,
+                            'offset_a2d_emission_ch2': 0, 'offset_a2d_emissivity_ch2': 0}
 
         self.dev_signals = {'time': [], 'temperature_ch1': [], 'emissivity_ch1': [], 'emission_ch1': [],
                             'temperature_ch2': [], 'emissivity_ch2': [], 'emission_ch2': [],
@@ -115,22 +118,22 @@ class NTM:
 
     def get_device_data(self):
         data = self.rxtx('nr301|1001|106|1126|1120|101|')
-        update_rate_code = data[0]
-        cycle_time = data[1]
-        update_rate = round(1 / ((10 ** -6) * int(update_rate_code) * int(cycle_time)), 2)
-        dev_type = data[2]
-        single_dual = data[3]
-        hw = data[4]
-        fw = data[5]
+        update_rate_code = int(data[0])
+        cycle_time = int(data[1])
+        update_rate = round(1 / ((10 ** -6) * update_rate_code * cycle_time), 2)
+        dev_type = str(data[2])
+        single_dual = int(data[3])
+        hw = int(data[4])
+        fw = str(data[5])
 
-        if int(hw) == 1:
+        if hw == 1:
             hw = 'Integrator'
-        elif int(hw) == 0:
+        elif hw == 0:
             hw = 'Standard'
 
-        if int(single_dual) == 1:
+        if single_dual == 1:
             single_dual = 'Dual'
-        elif int(single_dual) == 0:
+        elif single_dual == 0:
             single_dual = 'Single'
 
         self.dev_data['dev_type'] = dev_type
@@ -145,62 +148,62 @@ class NTM:
 
         data = self.rxtx('nr501|508|510|516|1201|1120|561|')
 
-        self.dev_gains_conf['gain_ch1'] = data[0]
-        self.dev_gains_conf['gain_ch2'] = data[1]
-        self.dev_gains_conf['is_scale_ch1'] = data[2]
-        self.dev_gains_conf['is_scale_ch2'] = data[3]
-        self.dev_gains_conf['integrator_mode'] = data[4]
-        self.dev_gains_conf['is_integrator_mode'] = data[5]
+        self.dev_gains_conf['gain_ch1'] = int(data[0])
+        self.dev_gains_conf['gain_ch2'] = int(data[1])
+        self.dev_gains_conf['is_scale_ch1'] = int(data[2])
+        self.dev_gains_conf['is_scale_ch2'] = int(data[3])
+        self.dev_gains_conf['integrator_mode'] = int(data[4])
+        self.dev_gains_conf['is_integrator_mode'] = int(data[5])
 
         try:
-            self.dev_gains_conf['max_gain'] = data[6]
+            self.dev_gains_conf['max_gain'] = int(data[6])
         except IndexError:
             print('Max gain (code 561) is not defined in this fw - return default 8000')
-            self.dev_gains_conf['max_gain'] = 8000
+            self.dev_gains_conf['max_gain'] = int(8000)
 
     def get_lph_settings(self):
 
         data = self.rxtx('nr2030|2031|2130|2131|2170|2171|2172|2173|2083|')
 
-        self.dev_lph_conf['lph_ch1'] = data[0]
-        self.dev_lph_conf['lph_ch1_scale'] = data[1]
-        self.dev_lph_conf['lph_ch2'] = data[2]
-        self.dev_lph_conf['lph_ch2_scale'] = data[3]
-        self.dev_lph_conf['max_lph_ch1'] = data[4]
-        self.dev_lph_conf['max_lph_ch1_scale'] = data[5]
-        self.dev_lph_conf['max_lph_ch2'] = data[6]
-        self.dev_lph_conf['max_lph_ch2_scale'] = data[7]
-        self.dev_lph_conf['is_lph_sync'] = data[8]
+        self.dev_lph_conf['lph_ch1'] = int(data[0])
+        self.dev_lph_conf['lph_ch1_scale'] = int(data[1])
+        self.dev_lph_conf['lph_ch2'] = int(data[2])
+        self.dev_lph_conf['lph_ch2_scale'] = int(data[3])
+        self.dev_lph_conf['max_lph_ch1'] = int(data[4])
+        self.dev_lph_conf['max_lph_ch1_scale'] = int(data[5])
+        self.dev_lph_conf['max_lph_ch2'] = int(data[6])
+        self.dev_lph_conf['max_lph_ch2_scale'] = int(data[7])
+        self.dev_lph_conf['is_lph_sync'] = int(data[8])
 
     def get_offsets_settings(self):
         data = self.rxtx('nr2035|2036|2041|2040|2047|2046|2037|2038|2039|2138|1211|1221|1222|')
 
-        if self.dev_gains_conf['is_integrator_mode'] == '1':
-            self.dev_offsets['offset_in_IL'] = float(data[0])
-            self.dev_offsets['offset_in_IS'] = float(data[1])
-            self.dev_offsets['offset_in_RC'] = float(data[2])
+        if self.dev_gains_conf['is_integrator_mode'] == 1:
+            self.dev_offsets['offset_in_IL'] = int(data[0])
+            self.dev_offsets['offset_in_IS'] = int(data[1])
+            self.dev_offsets['offset_in_RC'] = int(data[2])
             self.dev_offsets['offset_rf_IL'] = float(data[3])
             self.dev_offsets['offset_rf_IS'] = float(data[5])
-            self.dev_offsets['offset_a2d_emission_IL'] = float(data[6])
-            self.dev_offsets['offset_a2d_emissivity_IL'] = float(data[7])
-            self.dev_offsets['offset_a2d_emission_IS'] = float(data[8])
+            self.dev_offsets['offset_a2d_emission_IL'] = int(data[6])
+            self.dev_offsets['offset_a2d_emissivity_IL'] = int(data[7])
+            self.dev_offsets['offset_a2d_emission_IS'] = int(data[8])
             self.dev_offsets['offset_rf_RC'] = float(data[10])
-            self.dev_offsets['offset_a2d_emission_RC'] = float(data[11])
-            self.dev_offsets['offset_a2d_emissivity_RC'] = float(data[12])
+            self.dev_offsets['offset_a2d_emission_RC'] = int(data[11])
+            self.dev_offsets['offset_a2d_emissivity_RC'] = int(data[12])
 
         else:
-            self.dev_offsets['offset_in_ch1'] = float(data[0])
-            self.dev_offsets['offset_in_ch2'] = float(data[1])
-            self.dev_offsets['offset_in_scale_ch1'] = float(data[2])
+            self.dev_offsets['offset_in_ch1'] = int(data[0])
+            self.dev_offsets['offset_in_ch2'] = int(data[1])
+            self.dev_offsets['offset_in_scale_ch1'] = int(data[2])
             self.dev_offsets['offset_rf_ch1'] = float(data[3])
-            self.dev_offsets['offset_in_scale_ch2'] = float(data[4])
+            self.dev_offsets['offset_in_scale_ch2'] = int(data[4])
             self.dev_offsets['offset_rf_ch2'] = float(data[5])
-            self.dev_offsets['offset_a2d_emission_ch1'] = float(data[6])
-            self.dev_offsets['offset_a2d_emissivity_ch1'] = float(data[7])
-            self.dev_offsets['offset_a2d_emission_ch2'] = float(data[8])
-            self.dev_offsets['offset_a2d_emissivity_ch2'] = float(data[9])
+            self.dev_offsets['offset_a2d_emission_ch1'] = int(data[6])
+            self.dev_offsets['offset_a2d_emissivity_ch1'] = int(data[7])
+            self.dev_offsets['offset_a2d_emission_ch2'] = int(data[8])
+            self.dev_offsets['offset_a2d_emissivity_ch2'] = int(data[9])
 
-    def set_gain_settings(self, mode, gain_index):
+    def set_gain_settings(self, mode, gain_index, ch):
 
         """
         standard HW:
@@ -214,13 +217,21 @@ class NTM:
         """
 
         if self.dev_data['hw'] == 'Standard':
-            code = '510'
+            if ch == 'ch1':
+                param = '501'
+                code = '510'
+            else:
+                param = '508'
+                code = '516'
+
         elif self.dev_data['hw'] == 'Integrator':
+            param = '501'
             code = '1201'
         else:
+            param = '501'
             code = '510'
 
-        self.rxtx('ns' + code + '=' + str(mode) + '|501=' + str(gain_index) + '|')
+        self.rxtx('ns' + code + '=' + str(mode) + '|' + str(param) + '=' + str(gain_index) + '|')
 
     def send_full_packet(self, auto):
         # auto = 1 -> single packet
@@ -385,15 +396,19 @@ class NTM:
     def set_signal_value(self, signal, ch, min_limit, max_limit, gain, gain_mode, samples,
                          set_point, param_code, param_str):
 
-        self.set_gain_settings(gain_mode, gain)
+        self.set_gain_settings(gain_mode, gain, ch)
+
+        time.sleep(0.2)
 
         stat_data = self.signals_statistics(samples)
 
         signal_average = float(stat_data[signal + ch][0])
         signal_std = float(stat_data[signal + ch][1])
 
-        min_ref = set_point - 0.1 * (signal_std / 2)
-        max_ref = set_point + 0.1 * (signal_std / 2)
+        min_ref = set_point - 1 * np.min([(signal_std / 2), 1])
+        max_ref = set_point + 1 * np.min([(signal_std / 2), 1])
+
+        param_value = self.dev_offsets[param_str]
 
         print('\n' + signal + ch + ' (' + str(samples) + ' samples)')
         print('-----------------------------------------------')
@@ -402,17 +417,29 @@ class NTM:
         print('Set-point: ', set_point)
         print('Set-point low limit: ', min_ref)
         print('Set-point high limit: ', max_ref)
+        print('Gain mode: ', gain_mode)
+        print('Gain index: ', gain)
+        print(param_str + ': ' + str(param_value))
         print('-----------------------------------------------\n')
 
-        self.binary_search(signal, ch, min_limit, max_limit, min_ref, max_ref,
-                           param_code, param_str, samples, set_point)
+        if type(param_value) == int:
+            print('Binary search:')
+            print('--------------------')
+            self.binary_search(signal, ch, min_limit, max_limit, min_ref, max_ref,
+                               param_code, param_str, samples, set_point)
+        elif type(param_value) == float:
+            print('Average acquisition:')
+            print('-------------------------')
+            statistics_data = self.signals_statistics(3 * samples)
+            signal_average = float(statistics_data[signal + ch][0])
+            self.rxtx('ns' + param_code + '=' + str(float(signal_average) + float(param_value)) + '|')
 
     def binary_search(self, signal, ch, min_limit, max_limit, min_ref, max_ref,
                       param_code, param_str, samples, set_point):
 
         self.get_offsets_settings()
         param_value = self.dev_offsets[param_str]
-        print('Initial value of parameter =', param_value)
+        print('Initial value of parameter: ' + param_str + ' =', param_value)
 
         self.initiate_signals()
 
@@ -442,13 +469,13 @@ class NTM:
         statistics_data = self.signals_statistics(samples)
 
         signal_average = float(statistics_data[signal + ch][0])
+        print('Signal value = ', signal_average)
         counter = 0
 
         while ((signal_average < min_ref) or (signal_average > max_ref)) & (counter < 15):
 
             counter += 1
             print('\nRun # = ', counter)
-            print('Signal value = ', signal_average)
 
             if signal_average < min_ref:
                 if flag == 1:
@@ -468,21 +495,27 @@ class NTM:
                     param_value = (min_limit + param_value) / 2
                 self.rxtx('ns' + param_code + '=' + str(param_value) + '|')
 
+            time.sleep(0.2)
+
             statistics_data = self.signals_statistics(samples)
 
             signal_average = float(statistics_data[signal + ch][0])
-            print('\nparam_value = ', param_value)
+
+            print('param_value = ', param_value)
             print('min lim = ', min_limit)
             print('max lim = ', max_limit)
+            print('\nSignal value = ', signal_average)
 
-        # optimize parameter value by searching around SP
+        # optimize parameter value by searching around SP +/- N
         diffs = []
         averages = []
-        param_values = [param_value, param_value + 1, param_value - 1]
+        N = 2
+        param_values = list(np.linspace(param_value - N, param_value + N, 2*N + 1))
 
         for i in param_values:
             self.rxtx('ns' + param_code + '=' + str(i) + '|')
-            statistics_data = self.signals_statistics(samples)
+            time.sleep(0.2)
+            statistics_data = self.signals_statistics(2 * samples)
             averages.append(float(statistics_data[signal + ch][0]))
             diffs.append(np.abs(float(statistics_data[signal + ch][0]) - set_point))
 
