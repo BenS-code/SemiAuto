@@ -66,8 +66,8 @@ class NTM:
                     while not (data == b'DTOK\n' or data == b'DTErr\n'):
                         [data, _] = self.udp_client_socket.recvfrom(self.buffer_size)
 
-                print(self.sn + ' - sent data:', command)
-                print(self.sn + ' - received data:', data)
+                # print(self.sn + ' - sent data:', command)
+                # print(self.sn + ' - received data:', data)
 
                 split_data = data.decode('ISO-8859-1').split('|')
                 split_data = split_data[:-1]
@@ -115,6 +115,27 @@ class NTM:
                 print("Could not connect with the serial-port")
                 data = "Error"
                 return data
+
+    def get_full_parameters(self):
+        code = []
+        value = []
+        if (self.port == 50000) or (self.port == 50003):
+            cmd = 'nr'
+        else:
+            cmd = ''
+        print('\nExporting parameters... ')
+
+        tic = time.time()
+        for i in range(100, 4000, 10):
+            command = cmd
+            for j in range(10):
+                command = command + str(i+j) + '|'
+            # self.rxtx(command)
+            print(self.rxtx(command))
+        #     value.append(self.rxtx(command))
+        toc = time.time()
+        # values = np.array(value).reshape(-1)
+        return f'done in {toc-tic}'
 
     def get_device_data(self):
         data = self.rxtx('nr301|1001|106|1126|1120|101|')

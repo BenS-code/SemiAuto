@@ -8,7 +8,7 @@ class CalibrationWin(Toplevel):
         super().__init__(parent)
 
         self.parent = parent
-        self.parent.attributes('-disabled', 1)
+        # self.parent.attributes('-disabled', 1)
         self.dir = parent.directory_entry.get()
         self.tv = parent.tv
         self.combo = parent.combo
@@ -26,7 +26,7 @@ class CalibrationWin(Toplevel):
         if not self.tv.get_children():
             self.destroy()
             messagebox.showwarning(title='Information', message="Please select devices from the network")
-            self.parent.attributes('-disabled', 0)
+            # self.parent.attributes('-disabled', 0)
         else:
             combo_string = self.combo.get()
             if combo_string != "Select a calibration procedure":
@@ -42,6 +42,6 @@ class CalibrationWin(Toplevel):
 
         if messagebox.askokcancel("Quit", "Do you want to close the offsets calibration window?"):
             self.destroy()
-            self.parent.attributes('-disabled', 0)
+            # self.parent.attributes('-disabled', 0)
         else:
             pass

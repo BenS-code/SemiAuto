@@ -63,9 +63,14 @@ class GUI(Tk):
         self.remove_device_btn.pack(side=RIGHT, padx=10, pady=10)
 
         self.remove_all_btn = Button(self.wrapper1, text='Clear Table', width=15,
-                                     command=lambda: self.tv.delete(*self.tv.get_children()))
+                                     command=lambda: self.clear_table())
         self.remove_all_btn.config(state=NORMAL)
         self.remove_all_btn.pack(side=RIGHT, padx=10, pady=10)
+
+        self.export_params_btn = Button(self.wrapper1, text='Export parameters', width=15,
+                                        command=self.export_params)
+        self.export_params_btn.config(state=DISABLED)
+        self.export_params_btn.pack(side=RIGHT, padx=10, pady=10)
 
         cal_list = ['Offsets', 'Gain Multiplier', 'Cross Talk', 'Noise Spectrum', 'Emission STD',
                     'Temperature Calibration', 'Response procedure']
@@ -112,17 +117,27 @@ class GUI(Tk):
         for selected_item in self.tv.selection():
             self.tv.delete(selected_item)
 
+        if not self.tv.get_children():
+            self.export_params_btn.config(state=DISABLED)
+
+    def clear_table(self):
+        self.tv.delete(*self.tv.get_children())
+        self.export_params_btn.config(state=DISABLED)
+
     def find_ntm(self):
         port = 50000
         data = b'nw'
         time_out = 0.05
-        FindDev(self, port, time_out,  data)
+        FindDev(self, port, time_out, data)
 
     def find_tts(self):
         port = 50003
         data = b'ow'
         time_out = 0.05
         FindDev(self, port, time_out, data)
+
+    def export_params(self):
+        ExportParams(self.tv)
 
 
 if __name__ == "__main__":

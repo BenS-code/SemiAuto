@@ -97,12 +97,12 @@ class Offsets(Frame):
                                        self.progressbar,
                                        self.progress_var,
                                        self.dir)
-            cal_thread.daemon = True
-            threads.append(cal_thread)
+            # cal_thread.daemon = True
             cal_thread.start()
+            threads.append(cal_thread)
 
-        for t in threads:
-            t.join()
+        # for t in threads:
+        #     t.join()
 
     def on_stop_btn(self):
         self.start_btn.config(state=NORMAL)
@@ -114,6 +114,7 @@ class OffsetsThread(threading.Thread):
         threading.Thread.__init__(self)
 
         self.samplingFreq = None
+        self.daemon = False
         self.root = root
         self.parent = parent
         self.child = child
@@ -143,10 +144,10 @@ class OffsetsThread(threading.Thread):
             self.min_limit = int(-2048)
             self.max_limit = int(2047)
 
-        self.lock = threading.Lock()
-        self.lock.acquire()
+        # self.lock = threading.Lock()
+        # self.lock.acquire()
         self.run_thread()
-        self.lock.release()
+        # self.lock.release()
 
     def run_thread(self):
         self.tv_offsets.item(self.child, values=(self.dev.sn, self.ch, '', '', '',

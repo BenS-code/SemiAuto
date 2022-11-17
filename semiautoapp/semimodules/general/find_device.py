@@ -21,6 +21,7 @@ class FindDev(Toplevel):
         self.tree_scroll = None
         self.tv_dev = None
         self.wrapper = None
+        self.export_params_btn = parent.export_params_btn
         self.grab_set()
         self.init_ui()
         self.show_devices()
@@ -106,3 +107,6 @@ class FindDev(Toplevel):
                 else:
                     messagebox.showwarning(title='Information', message="Unit is already in the device list")
                     break
+
+        if self.tv.get_children():
+            self.export_params_btn.config(state=NORMAL)
