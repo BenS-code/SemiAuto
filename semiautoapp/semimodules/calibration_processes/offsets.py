@@ -1,9 +1,9 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-import threading
 from ..general.devices import *
 from ..general.create_directory import *
+import concurrent.futures
 
 
 class Offsets(Frame):
@@ -85,36 +85,27 @@ class Offsets(Frame):
         self.start_btn.config(state=DISABLED)
         self.stop_btn.config(state=NORMAL)
 
-        threads = []
         messagebox.showwarning(title='Message', message='Make sure that all units are stabilized and in the dark')
 
         self.parent.focus_force()
 
-        for child in self.tv.get_children():
-
-            cal_thread = OffsetsThread(self.parent, self, child,
-                                       self.status_entry,
-                                       self.progressbar,
-                                       self.progress_var,
-                                       self.dir)
-            # cal_thread.daemon = True
-            cal_thread.start()
-            threads.append(cal_thread)
-
-        # for t in threads:
-        #     t.join()
+        futures = []
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for child in self.tv.get_children():
+                futures.append(executor.submit(OffsetsThread(self.parent, self, child,
+                                               self.status_entry,
+                                               self.progressbar,
+                                               self.progress_var,
+                                               self.dir)))
 
     def on_stop_btn(self):
         self.start_btn.config(state=NORMAL)
         self.stop_btn.config(state=DISABLED)
 
 
-class OffsetsThread(threading.Thread):
+class OffsetsThread:
     def __init__(self, root, parent, child, status, progressbar, progress_var, directory):
-        threading.Thread.__init__(self)
-
         self.samplingFreq = None
-        self.daemon = False
         self.root = root
         self.parent = parent
         self.child = child
@@ -144,10 +135,7 @@ class OffsetsThread(threading.Thread):
             self.min_limit = int(-2048)
             self.max_limit = int(2047)
 
-        # self.lock = threading.Lock()
-        # self.lock.acquire()
         self.run_thread()
-        # self.lock.release()
 
     def run_thread(self):
         self.tv_offsets.item(self.child, values=(self.dev.sn, self.ch, '', '', '',
