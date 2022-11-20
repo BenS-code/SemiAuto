@@ -137,7 +137,7 @@ class GUI(Tk):
         FindDev(self, port, time_out, data)
 
     def export_params(self):
-        ExportParams(self.tv)
+        ExportParams(self.tv, self.directory_entry)
 
 
 if __name__ == "__main__":

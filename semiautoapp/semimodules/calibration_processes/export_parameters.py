@@ -1,17 +1,15 @@
-from tkinter import *
-from tkinter import ttk
-from tkinter import messagebox
-import threading
+import pandas as pd
 from ..general.devices import *
 from ..general.create_directory import *
 import concurrent.futures
 
 
 class ExportParams:
-    def __init__(self, tv):
+    def __init__(self, tv, directory_entry):
         super().__init__()
 
         self.tv = tv
+        self.dir = directory_entry
         self.export_params()
 
     def export_params(self):
@@ -26,12 +24,9 @@ class ExportParams:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for dev in devs:
                 futures.append(executor.submit(dev.get_full_parameters))
-            for future in concurrent.futures.as_completed(futures):
-                print(future.result())
-
-            # t = threading.Thread(target=dev.get_full_parameters())
-            # t.start()
-            # threads.append(t)
-        #
-        # for thread in threads:
-        #     thread.join()
+                file_path = create_dir(dev.sn, self.dir.get(), "Parameters")
+                for future in concurrent.futures.as_completed(futures):
+                    dictionary = {'Code': future.result()[2], 'Value': future.result()[1]}
+                df = pd.DataFrame(dictionary)
+                df.to_csv(f'{file_path}/{dev.sn}_parameters.csv', index=False)
+                print(future.result()[0])

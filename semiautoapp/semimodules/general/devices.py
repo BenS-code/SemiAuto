@@ -60,6 +60,7 @@ class NTM:
             self.udp_client_socket.sendto(bytes_to_send, server_address_port)
 
             results = []
+            code_number = []
             try:
                 [data, _] = self.udp_client_socket.recvfrom(self.buffer_size)
                 if command == 'dts':
@@ -69,16 +70,17 @@ class NTM:
                 # print(self.sn + ' - sent data:', command)
                 # print(self.sn + ' - received data:', data)
 
-                split_data = data.decode('ISO-8859-1').split('|')
+                split_data = data.decode('ISO-8859-1')[2:].split('|')
                 split_data = split_data[:-1]
                 try:
                     for i in split_data:
                         results.append(i.split('=')[1])
+                        code_number.append(i.split('=')[0])
 
                 except IndexError:
                     print('Problem occurred in data received')
 
-                return results
+                return results, code_number
             except error:
 
                 print("Could not connect with the LAN-port")
@@ -99,16 +101,18 @@ class NTM:
             # write to device
             self.com_port.write(send_data)
             results = []
+            code_number = []
             try:
                 data = self.com_port.readline()
 
-                split_data = data.decode('ISO-8859-1').split('|')
+                split_data = data.decode('ISO-8859-1')[2:].split('|')
                 for i in split_data[:-1]:
                     results.append(i.split('=')[1])
+                    code_number.append(i.split('=')[0])
 
                 # print('sent data:', command)
                 # print('received data:', data)
-                return results
+                return results, code_number
 
             except error:
 
@@ -117,8 +121,9 @@ class NTM:
                 return data
 
     def get_full_parameters(self):
-        code = []
-        value = []
+        codes = []
+        values = []
+        data = []
         if (self.port == 50000) or (self.port == 50003):
             cmd = 'nr'
         else:
@@ -126,19 +131,22 @@ class NTM:
         print('\nExporting parameters... ')
 
         tic = time.time()
-        for i in range(100, 4000, 10):
+        N_commands = 10
+        for i in range(100, 4000, N_commands):
             command = cmd
-            for j in range(10):
+            for j in range(N_commands):
                 command = command + str(i+j) + '|'
-            # self.rxtx(command)
-            print(self.rxtx(command))
-        #     value.append(self.rxtx(command))
+            [value, code] = self.rxtx(command)
+            values.append(value)
+            codes.append(code)
         toc = time.time()
-        # values = np.array(value).reshape(-1)
-        return f'done in {toc-tic}'
+        codes = np.hstack(codes)
+        values = np.hstack(values)
+
+        return f'done in {toc-tic}', values, codes
 
     def get_device_data(self):
-        data = self.rxtx('nr301|1001|106|1126|1120|101|')
+        [data, _] = self.rxtx('nr301|1001|106|1126|1120|101|')
         update_rate_code = int(data[0])
         cycle_time = int(data[1])
         update_rate = round(1 / ((10 ** -6) * update_rate_code * cycle_time), 2)
@@ -167,7 +175,7 @@ class NTM:
 
     def get_gain_settings(self):
 
-        data = self.rxtx('nr501|508|510|516|1201|1120|561|')
+        [data, _] = self.rxtx('nr501|508|510|516|1201|1120|561|')
 
         self.dev_gains_conf['gain_ch1'] = int(data[0])
         self.dev_gains_conf['gain_ch2'] = int(data[1])
@@ -184,7 +192,7 @@ class NTM:
 
     def get_lph_settings(self):
 
-        data = self.rxtx('nr2030|2031|2130|2131|2170|2171|2172|2173|2083|')
+        [data, _] = self.rxtx('nr2030|2031|2130|2131|2170|2171|2172|2173|2083|')
 
         self.dev_lph_conf['lph_ch1'] = int(data[0])
         self.dev_lph_conf['lph_ch1_scale'] = int(data[1])
@@ -197,7 +205,7 @@ class NTM:
         self.dev_lph_conf['is_lph_sync'] = int(data[8])
 
     def get_offsets_settings(self):
-        data = self.rxtx('nr2035|2036|2041|2040|2047|2046|2037|2038|2039|2138|1211|1221|1222|')
+        [data, _] = self.rxtx('nr2035|2036|2041|2040|2047|2046|2037|2038|2039|2138|1211|1221|1222|')
 
         if self.dev_gains_conf['is_integrator_mode'] == 1:
             self.dev_offsets['offset_in_IL'] = int(data[0])
