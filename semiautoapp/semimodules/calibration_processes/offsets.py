@@ -208,20 +208,6 @@ class OffsetsThread:
 
         self.progressbar.config(maximum=len(signal_workflow))
         for i in range(0, len(signal_workflow)):
-            # set_signal_thread = threading.Thread(target=self.dev.set_signal_value,
-            #                                      args=(signal_workflow[i],
-            #                                            self.ch, min_limit,
-            #                                            max_limit,
-            #                                            gain_index_workflow[i],
-            #                                            gain_mode_workflow[i],
-            #                                            samples,
-            #                                            signal_set_point,
-            #                                            cmd_workflow[i],
-            #                                            param_workflow[i])
-            #                                      )
-            # set_signal_thread.daemon = True
-            # set_signal_thread.start()
-            # set_signal_thread.join()
 
             self.dev.set_signal_value(signal_workflow[i], self.ch, min_limit,
                                       max_limit, gain_index_workflow[i],

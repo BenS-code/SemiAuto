@@ -44,41 +44,39 @@ class LAN:
         return lan_list, sn_list, ip_list
 
 
-# class RS232:
-#
-#     def __init__(self):
-#         self.port = None
-#         self.ports = None
-#         self.s = None
-#
-#         self.show_ports()
-#
-#     def show_ports(self):
-#         # function lists COM ports in combobox
-#
-#         self.ports = serial.tools.list_ports.comports(include_links=False)
-#         com_ports = []
-#         for i in sorted(self.ports):
-#             com_ports.append(i.device)
-#
-#         return com_ports
-#
-#     def connect_serial(self, port):
-#         # function connects NTM to COM port
-#
-#         try:
-#             # define serial port
-#             self.s = serial.Serial(
-#                 port=self.port,
-#                 baudrate=115200,
-#                 parity=serial.PARITY_EVEN,
-#                 stopbits=serial.STOPBITS_ONE,
-#                 bytesize=serial.EIGHTBITS,
-#                 timeout=1)
-#
-#             return self.s
-#
-#         except serial.SerialException:
-#             print("Access is denied")
-#
-#
+class RS232:
+
+    def __init__(self):
+        self.port = None
+        self.ports = None
+        self.s = None
+
+    def show_ports(self):
+        # function lists COM ports in combobox
+
+        self.ports = serial.tools.list_ports.comports(include_links=False)
+        com_ports = []
+        for i in sorted(self.ports):
+            com_ports.append(i.device)
+
+        return com_ports
+
+    def connect_serial(self, port):
+        # function connects NTM to COM port
+
+        try:
+            # define serial port
+            self.s = serial.Serial(
+                port=self.port,
+                baudrate=115200,
+                parity=serial.PARITY_EVEN,
+                stopbits=serial.STOPBITS_ONE,
+                bytesize=serial.EIGHTBITS,
+                timeout=1)
+
+            return self.s
+
+        except serial.SerialException:
+            print("Access is denied")
+
+

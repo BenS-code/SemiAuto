@@ -123,7 +123,6 @@ class NTM:
     def get_full_parameters(self):
         codes = []
         values = []
-        data = []
         if (self.port == 50000) or (self.port == 50003):
             cmd = 'nr'
         else:
@@ -132,7 +131,7 @@ class NTM:
 
         tic = time.time()
         N_commands = 10
-        for i in range(100, 4000, N_commands):
+        for i in range(100, 4100, N_commands):
             command = cmd
             for j in range(N_commands):
                 command = command + str(i+j) + '|'

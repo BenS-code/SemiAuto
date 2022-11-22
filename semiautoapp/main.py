@@ -47,6 +47,14 @@ class GUI(Tk):
             self.tv.heading(i, text=text_arr[i - 1])
             self.tv.column(i, anchor=CENTER, stretch=YES, width=100)
 
+        self.var = IntVar(None, 1)
+
+        self.R_rs232 = Radiobutton(self.wrapper1, text='RS232', variable=self.var, value=2)
+        self.R_rs232.pack(side=RIGHT, padx=10, pady=10)
+
+        self.R_lan = Radiobutton(self.wrapper1, text='LAN', variable=self.var, value=1)
+        self.R_lan.pack(side=RIGHT, padx=10, pady=10)
+
         self.find_ntm_btn = Button(self.wrapper1, text='Find NTM units', width=15,
                                    command=lambda: self.find_ntm())
         self.find_ntm_btn.config(state=NORMAL)
