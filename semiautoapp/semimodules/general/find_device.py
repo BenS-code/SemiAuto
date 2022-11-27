@@ -139,9 +139,41 @@ class FindDev(Toplevel):
                         messagebox.showwarning(title='Information', message="Unit is already in the device list")
                         break
 
-            if self.tv.get_children():
-                self.export_params_btn.config(state=NORMAL)
-
         elif self.communication == 2:
             self.port = RS232().connect_serial(self.cb_serial.get())
             self.dev = NTM('RS232', self.port, '', '', '')
+            self.dev.port = self.cb_serial.get()
+
+            if self.dev.dev_data['single_dual'] == 'Dual':
+                number_of_channels = 2
+            else:
+                number_of_channels = 1
+
+            for i in range(number_of_channels):
+                ch = 'ch' + str(i + 1)
+                values = [self.dev.sn, ch, self.dev.communication, self.dev.port, self.dev.ip,
+                          self.dev.dev_data['fw'],
+                          self.dev.dev_data['hw'], self.dev.dev_data['dev_type'], self.dev.dev_data['single_dual'],
+                          self.dev.dev_data['update_rate']]
+                tv_values = []
+                dev_str = self.dev.sn + '_' + ch
+                print(values)
+                for child in self.tv.get_children():
+                    tv_values.append(self.tv.item(child)["values"][0] + '_' + self.tv.item(child)["values"][1])
+
+                if dev_str not in tv_values:
+                    if len(self.tv.get_children()) > 15:
+                        messagebox.showwarning(title='Information',
+                                               message="The device list is limited to 16 channels")
+                    else:
+                        self.tv.insert('', END, values=values)
+                        for child in self.tv.get_children():
+                            tv_values.append(
+                                self.tv.item(child)["values"][0] + '_' + self.tv.item(child)["values"][1])
+                else:
+                    messagebox.showwarning(title='Information', message="Unit is already in the device list")
+                    break
+
+        if self.tv.get_children():
+            self.export_params_btn.config(state=NORMAL)
+
