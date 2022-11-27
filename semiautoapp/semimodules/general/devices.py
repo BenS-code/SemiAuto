@@ -10,7 +10,7 @@ class NTM:
 
         # set defaults
 
-        self.dev_data = {'sn': '', 'dev_type': '', 'single_dual': '', 'hw': '', 'fw': '', 'update_rate': 10,
+        self.dev_data = {'sn': '', 'ip': '', 'dev_type': '', 'single_dual': '', 'hw': '', 'fw': '', 'update_rate': 10,
                          'cycle_time': 100000, 'update_rate_code': 1}
 
         self.dev_gains_conf = {'gain_ch1': 0, 'gain_ch2': 0, 'is_scale_ch1': 0, 'is_scale_ch2': 0,
@@ -145,7 +145,7 @@ class NTM:
         return f'done in {toc-tic}', values, codes
 
     def get_device_data(self):
-        [data, _] = self.rxtx('nr301|1001|106|1126|1120|101|102|')
+        [data, _] = self.rxtx('nr301|1001|106|1126|1120|101|102|105|')
         update_rate_code = int(data[0])
         cycle_time = int(data[1])
         update_rate = round(1 / ((10 ** -6) * update_rate_code * cycle_time), 2)
@@ -154,6 +154,7 @@ class NTM:
         hw = int(data[4])
         fw = str(data[5])
         sn = str(data[6])
+        ip = str(data[7])
 
         if hw == 1:
             hw = 'Integrator'
@@ -166,7 +167,9 @@ class NTM:
             single_dual = 'Single'
 
         self.sn = sn
-        self.dev_data['sn'] = sn
+        self.ip = ip
+        self.dev_data['sn'] = self.sn
+        self.dev_data['ip'] = self.ip
         self.dev_data['dev_type'] = dev_type
         self.dev_data['single_dual'] = single_dual
         self.dev_data['hw'] = hw
