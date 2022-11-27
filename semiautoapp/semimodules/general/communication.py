@@ -63,6 +63,7 @@ class RS232:
 
     def connect_serial(self, port):
         # function connects NTM to COM port
+        self.port = port
 
         try:
             # define serial port

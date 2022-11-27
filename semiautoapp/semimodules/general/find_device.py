@@ -105,6 +105,7 @@ class FindDev(Toplevel):
     def add_device(self):
         if self.communication == 1:
             for selected_item in self.tv_dev.selection():
+
                 [sn, ip] = self.tv_dev.item(selected_item, 'values')
                 self.dev = NTM('LAN', '', sn, ip, self.port)
 
@@ -115,7 +116,8 @@ class FindDev(Toplevel):
 
                 for i in range(number_of_channels):
                     ch = 'ch' + str(i + 1)
-                    values = [self.dev.sn, ch, self.dev.communication, self.dev.port, self.dev.ip, self.dev.dev_data['fw'],
+                    values = [self.dev.sn, ch, self.dev.communication, self.dev.port, self.dev.ip,
+                              self.dev.dev_data['fw'],
                               self.dev.dev_data['hw'], self.dev.dev_data['dev_type'], self.dev.dev_data['single_dual'],
                               self.dev.dev_data['update_rate']]
                     tv_values = []
@@ -131,7 +133,8 @@ class FindDev(Toplevel):
                         else:
                             self.tv.insert('', END, values=values)
                             for child in self.tv.get_children():
-                                tv_values.append(self.tv.item(child)["values"][0] + '_' + self.tv.item(child)["values"][1])
+                                tv_values.append(
+                                    self.tv.item(child)["values"][0] + '_' + self.tv.item(child)["values"][1])
                     else:
                         messagebox.showwarning(title='Information', message="Unit is already in the device list")
                         break
@@ -139,6 +142,6 @@ class FindDev(Toplevel):
             if self.tv.get_children():
                 self.export_params_btn.config(state=NORMAL)
 
-            elif self.communication == 2:
-                self.dev = NTM('', 'RS232', '', '', self.port)
-                print(self.dev)
+        elif self.communication == 2:
+            self.port = RS232().connect_serial(self.cb_serial.get())
+            self.dev = NTM('RS232', self.port, '', '', '')

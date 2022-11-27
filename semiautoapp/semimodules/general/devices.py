@@ -103,7 +103,7 @@ class NTM:
             results = []
             code_number = []
             try:
-                data = self.com_port.readline()
+                data = self.com_port.readline() + self.com_port.readline() + self.com_port.readline()
 
                 split_data = data.decode('ISO-8859-1')[2:].split('|')
                 for i in split_data[:-1]:
