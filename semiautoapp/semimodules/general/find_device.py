@@ -25,10 +25,10 @@ class FindDev(Toplevel):
         self.wrapper = None
         self.export_params_btn = parent.export_params_btn
         self.grab_set()
-        if self.communication == 1:
+        if self.communication == 'LAN':
             self.init_ui_lan()
             self.show_devices()
-        elif self.communication == 2:
+        elif self.communication == 'RS232':
             self.init_ui_rs232()
 
     def init_ui_lan(self):
@@ -103,11 +103,11 @@ class FindDev(Toplevel):
             self.tv_dev.insert('', END, values=[df["SN"][j], df["IP/COM"][j]])
 
     def add_device(self):
-        if self.communication == 1:
+        if self.communication == 'LAN':
             for selected_item in self.tv_dev.selection():
 
                 [sn, ip] = self.tv_dev.item(selected_item, 'values')
-                self.dev = NTM('LAN', '', sn, ip, self.port)
+                self.dev = NTM(self.communication, "", sn, ip, self.port)
 
                 if self.dev.dev_data['single_dual'] == 'Dual':
                     number_of_channels = 2
@@ -139,9 +139,13 @@ class FindDev(Toplevel):
                         messagebox.showwarning(title='Information', message="Unit is already in the device list")
                         break
 
-        elif self.communication == 2:
+        elif self.communication == 'RS232':
+            try:
+                self.port.close()
+            except AttributeError:
+                pass
             self.port = RS232().connect_serial(self.cb_serial.get())
-            self.dev = NTM('RS232', self.port, '', '', '')
+            self.dev = NTM(self.communication, self.port, '', '', '')
             self.dev.port = self.cb_serial.get()
 
             if self.dev.dev_data['single_dual'] == 'Dual':
@@ -172,8 +176,8 @@ class FindDev(Toplevel):
                                 self.tv.item(child)["values"][0] + '_' + self.tv.item(child)["values"][1])
                 else:
                     messagebox.showwarning(title='Information', message="Unit is already in the device list")
+                    self.port.close()
                     break
-
+            self.port.close()
         if self.tv.get_children():
             self.export_params_btn.config(state=NORMAL)
-

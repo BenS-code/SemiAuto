@@ -67,13 +67,13 @@ class NTM:
                     while not (data == b'DTOK\n' or data == b'DTErr\n'):
                         [data, _] = self.udp_client_socket.recvfrom(self.buffer_size)
 
-                # print(self.sn + ' - sent data:', command)
-                # print(self.sn + ' - received data:', data)
+                print(self.sn + ' - sent data:', command)
+                print(self.sn + ' - received data:', data)
 
                 split_data = data.decode('ISO-8859-1')[2:].split('|')
-                split_data = split_data[:-1]
+                print(split_data)
                 try:
-                    for i in split_data:
+                    for i in split_data[:-1]:
                         results.append(i.split('=')[1])
                         code_number.append(i.split('=')[0])
 
@@ -106,12 +106,13 @@ class NTM:
                 data = self.com_port.readline() + self.com_port.readline() + self.com_port.readline()
 
                 split_data = data.decode('ISO-8859-1')[2:].split('|')
+                print(split_data)
                 for i in split_data[:-1]:
                     results.append(i.split('=')[1])
                     code_number.append(i.split('=')[0])
 
-                # print('sent data:', command)
-                # print('received data:', data)
+                print('sent data:', command)
+                print('received data:', data)
                 return results, code_number
 
             except error:
@@ -123,10 +124,7 @@ class NTM:
     def get_full_parameters(self):
         codes = []
         values = []
-        if (self.port == 50000) or (self.port == 50003):
-            cmd = 'nr'
-        else:
-            cmd = ''
+        cmd = 'nr'
         print('\nExporting parameters... ')
 
         tic = time.time()
@@ -145,7 +143,7 @@ class NTM:
         return f'done in {toc-tic}', values, codes
 
     def get_device_data(self):
-        [data, _] = self.rxtx('nr301|1001|106|1126|1120|101|102|105|')
+        [data, _] = self.rxtx('nr301|1001|106|1126|1120|101|102|110|')
         update_rate_code = int(data[0])
         cycle_time = int(data[1])
         update_rate = round(1 / ((10 ** -6) * update_rate_code * cycle_time), 2)
@@ -168,8 +166,8 @@ class NTM:
 
         self.sn = sn
         self.ip = ip
-        self.dev_data['sn'] = self.sn
-        self.dev_data['ip'] = self.ip
+        self.dev_data['sn'] = sn
+        self.dev_data['ip'] = ip
         self.dev_data['dev_type'] = dev_type
         self.dev_data['single_dual'] = single_dual
         self.dev_data['hw'] = hw

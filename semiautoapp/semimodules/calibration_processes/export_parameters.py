@@ -1,6 +1,7 @@
 import pandas as pd
 from ..general.devices import *
 from ..general.create_directory import *
+from semiautoapp.semimodules.general.communication import *
 import concurrent.futures
 
 
@@ -16,9 +17,12 @@ class ExportParams:
         devs = []
         for selected_item in self.tv.selection():
             device_values = self.tv.item(selected_item)['values']
-            [sn, _, comm, port, ip, _, _,
+            [sn, _, comm, port, ip, _,  _,
              _, _, _] = device_values
-            devs.append(NTM(comm, '', sn, ip, port))
+            if comm == 'LAN':
+                devs.append(NTM(comm, '', sn, ip, port))
+            elif comm == 'RS232':
+                devs.append(NTM(comm, RS232().connect_serial(port), sn, ip, ''))
 
         futures = []
         with concurrent.futures.ThreadPoolExecutor() as executor:
